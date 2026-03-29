@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+  <name>Chat Document</name>
+  <short_name>ChatDoc</short_name>
+  <description>Your living chat document &#x2014; capture, search and organise conversations from any AI provider.</description>
+  <start_url>/index.html</start_url>
+  <display>standalone</display>
+  <orientation>any</orientation>
+  <background_color>#1c1a16</background_color>
+  <theme_color>#b5894a</theme_color>
+  <categories>productivity</categories>
+  <categories>utilities</categories>
+  <icons>
+    <src>icons/icon-192.png</src>
+    <sizes>192x192</sizes>
+    <type>image/png</type>
+    <purpose>any maskable</purpose>
+  </icons>
+  <icons>
+    <src>icons/icon-512.png</src>
+    <sizes>512x512</sizes>
+    <type>image/png</type>
+    <purpose>any maskable</purpose>
+  </icons>
+  <screenshots empty-array="true"></screenshots>
+  <shortcuts array="true">
+    <name>New Chapter</name>
+    <short_name>New Chapter</short_name>
+    <description>Open Chat Document and add a new chapter</description>
+    <url>/index.html</url>
+  </shortcuts>
+</root>
