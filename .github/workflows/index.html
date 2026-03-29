@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat Document</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#b5894a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ChatDoc">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Inconsolata:wght@400;500;600&family=Mulish:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:       #f7f5f0;
+  --paper:    #fdfcf9;
+  --paper2:   #f0ece3;
+  --border:   #e2ddd4;
+  --border2:  #ccc8be;
+  --ink:      #1c1a16;
+  --ink2:     #6b6559;
+  --ink3:     #a9a296;
+  --gold:     #b5894a;
+  --gold2:    #d4a85a;
+  --teal:     #3d7a6a;
+  --rust:     #a04030;
+  --user-accent:   #b5894a;
+  --ai-accent:     #3d7a6a;
+  --sys-accent:    #6b5a8e;
+  --tag-bg:   #fdf6e8;
+  --shadow2:  0 4px 24px rgba(28,26,22,0.12);
+}
+body {
+  font-family: 'Mulish', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Topbar ── */
+.topbar {
+  height: 50px;
+  background: var(--ink);
+  display: flex; align-items: center;
+  padding: 0 20px; gap: 14px;
+  flex-shrink: 0;
+  border-bottom: 2px solid var(--gold);
+}
+.brand {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem; font-weight: 700;
+  color: var(--gold2); white-space: nowrap;
+}
+.brand em { font-style: italic; color: #fff; }
+.doc-name-input {
+  font-family: 'Mulish', sans-serif; font-size: 0.82rem; font-weight: 500;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px; color: #fff; padding: 5px 10px; outline: none; width: 190px;
+}
+.doc-name-input:focus { border-color: rgba(181,137,74,0.5); }
+.doc-name-input::placeholder { color: rgba(255,255,255,0.25); }
+.topbar-sep { flex: 1; }
+.search-wrap {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px; padding: 0 10px;
+}
+.search-wrap:focus-within { border-color: rgba(181,137,74,0.5); }
+.search-wrap input {
+  background: none; border: none; outline: none;
+  font-family: 'Inconsolata', monospace; font-size: 0.78rem;
+  color: #fff; padding: 6px 0; width: 170px;
+}
+.search-wrap input::placeholder { color: rgba(255,255,255,0.25); }
+.search-wrap .si { color: rgba(255,255,255,0.3); }
+.search-hit { font-family: 'Inconsolata', monospace; font-size: 0.68rem; color: var(--gold2); white-space: nowrap; }
+.tb-btn {
+  font-family: 'Mulish', sans-serif; font-size: 0.72rem; font-weight: 600;
+  padding: 6px 13px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);
+  cursor: pointer; background: none; color: rgba(255,255,255,0.7);
+  white-space: nowrap; transition: all 0.14s;
+}
+.tb-btn:hover { color: #fff; border-color: rgba(255,255,255,0.45); }
+.tb-btn-gold { background: var(--gold); color: #fff; border-color: var(--gold); }
+.tb-btn-save { background: var(--teal); color: #fff; border-color: var(--teal); }
+.tb-btn-save:hover { background: #2f6255; border-color: #2f6255; }
+.tb-btn-save.dirty { animation: pulse-save 2s infinite; }
+@keyframes pulse-save { 0%,100%{opacity:1} 50%{opacity:0.7} }
+.tb-btn-gold:hover { background: var(--gold2); }
+
+/* ── Body ── */
+.body-wrap { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 210px; flex-shrink: 0;
+  background: var(--paper); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sb-section { border-bottom: 1px solid var(--border); padding: 12px 14px; }
+.sb-label {
+  font-family: 'Inconsolata', monospace; font-size: 0.58rem;
+  text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink3); margin-bottom: 8px;
+}
+.provider-grid { display: flex; flex-direction: column; gap: 5px; }
+.prov-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 5px; border: 1px solid var(--border);
+  background: var(--paper2); cursor: pointer; transition: all 0.13s; text-decoration: none;
+}
+.prov-btn:hover { border-color: var(--border2); background: #ede9df; transform: translateX(2px); }
+.prov-icon { font-size: 0.85rem; flex-shrink: 0; }
+.prov-name { font-size: 0.78rem; font-weight: 600; color: var(--ink2); }
+.prov-sub  { font-size: 0.63rem; color: var(--ink3); }
+.prov-arrow { margin-left: auto; color: var(--ink3); font-size: 0.7rem; }
+.toc-scroll { flex: 1; overflow-y: auto; padding: 6px 0; }
+.toc-scroll::-webkit-scrollbar { width: 3px; }
+.toc-scroll::-webkit-scrollbar-thumb { background: var(--border2); }
+.toc-item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 14px; cursor: pointer; transition: background 0.1s;
+  border-left: 2px solid transparent;
+}
+.toc-item:hover { background: var(--paper2); }
+.toc-item.active { background: var(--paper2); border-left-color: var(--gold); }
+.toc-n { font-family: 'Inconsolata', monospace; font-size: 0.58rem; color: var(--ink3); width: 14px; flex-shrink: 0; }
+.toc-t { font-size: 0.77rem; color: var(--ink2); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toc-item.active .toc-t { color: var(--ink); font-weight: 600; }
+.toc-c { font-family: 'Inconsolata', monospace; font-size: 0.58rem; color: var(--ink3); }
+.sb-add-ch {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin: 8px 14px; padding: 7px; border: 1px dashed var(--border2);
+  border-radius: 5px; cursor: pointer; font-size: 0.75rem; color: var(--ink3);
+  transition: all 0.13s;
+}
+.sb-add-ch:hover { border-color: var(--gold); color: var(--gold); background: var(--tag-bg); }
+
+/* ── Document ── */
+.doc-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; background: var(--paper); }
+.doc-scroll { flex: 1; overflow-y: auto; padding: 36px 0 160px; }
+.doc-scroll::-webkit-scrollbar { width: 5px; }
+.doc-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+
+/* ── Paste zone ── */
+.paste-zone {
+  position: sticky; bottom: 0; background: var(--paper);
+  border-top: 1px solid var(--border); padding: 12px 32px 14px; z-index: 10;
+  box-shadow: 0 -4px 20px rgba(28,26,22,0.06);
+}
+.paste-row { display: flex; gap: 8px; align-items: flex-start; max-width: 720px; margin: 0 auto; }
+.paste-col { flex: 1; min-width: 0; }
+.paste-label {
+  font-family: 'Inconsolata', monospace; font-size: 0.6rem; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--ink3); margin-bottom: 5px;
+  display: flex; align-items: center; gap: 8px;
+}
+.paste-hint { font-size: 0.65rem; color: var(--ink3); margin-left: auto; font-family: 'Inconsolata', monospace; }
+.paste-textarea {
+  width: 100%; background: var(--paper2); border: 1px solid var(--border2); border-radius: 6px;
+  color: var(--ink); font-family: 'Inconsolata', monospace; font-size: 0.76rem;
+  line-height: 1.55; padding: 10px 13px; resize: none; outline: none;
+  min-height: 52px; max-height: 140px; overflow-y: auto; transition: border-color 0.15s;
+}
+.paste-textarea:focus { border-color: rgba(181,137,74,0.5); background: #fdfcf9; }
+.paste-textarea::placeholder { color: var(--ink3); }
+.paste-side { display: flex; flex-direction: column; gap: 6px; padding-top: 18px; flex-shrink: 0; }
+.paste-ch-select {
+  background: var(--paper2); border: 1px solid var(--border2); border-radius: 5px;
+  color: var(--ink); font-family: 'Mulish', sans-serif; font-size: 0.78rem;
+  padding: 7px 9px; outline: none; cursor: pointer; min-width: 130px;
+}
+.paste-btn {
+  font-family: 'Mulish', sans-serif; font-size: 0.78rem; font-weight: 600;
+  padding: 8px 16px; border-radius: 5px; border: none; cursor: pointer;
+  background: var(--gold); color: #fff; transition: all 0.14s;
+}
+.paste-btn:hover { background: var(--gold2); }
+.paste-btn:disabled { background: var(--border2); color: var(--ink3); cursor: not-allowed; }
+
+/* ── Chapter ── */
+.chapter { max-width: 720px; margin: 0 auto 44px; padding: 0 32px; animation: fadeUp 0.2s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.ch-header {
+  display: flex; align-items: baseline; gap: 10px;
+  padding-bottom: 10px; margin-bottom: 18px; border-bottom: 1px solid var(--border);
+}
+.ch-num { font-family: 'Inconsolata', monospace; font-size: 0.62rem; color: var(--ink3); flex-shrink: 0; }
+.ch-title-input {
+  font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 500;
+  background: none; border: none; color: var(--ink); outline: none; flex: 1;
+  border-bottom: 1px solid transparent; transition: border-color 0.15s;
+}
+.ch-title-input:focus { border-bottom-color: var(--gold); }
+.ch-acts { display: flex; gap: 5px; opacity: 0; transition: opacity 0.15s; }
+.ch-header:hover .ch-acts { opacity: 1; }
+.ch-act {
+  background: none; border: 1px solid var(--border2); border-radius: 3px;
+  font-family: 'Inconsolata', monospace; font-size: 0.62rem; color: var(--ink3);
+  padding: 2px 7px; cursor: pointer; transition: all 0.12s;
+}
+.ch-act:hover { color: var(--ink); border-color: var(--ink3); }
+.ch-act.danger:hover { color: var(--rust); border-color: rgba(160,64,48,0.5); }
+.ch-divider {
+  max-width: 720px; margin: 0 auto 36px; padding: 0 32px;
+  display: flex; align-items: center; gap: 14px;
+}
+.ch-divider hr { flex: 1; border: none; border-top: 1px solid var(--border); }
+.ch-divider span { font-family: 'Inconsolata', monospace; font-size: 0.58rem; color: var(--ink3); }
+
+/* ── Messages ── */
+.messages { display: flex; flex-direction: column; }
+.msg {
+  display: flex; gap: 0; padding: 9px 0;
+  border-bottom: 1px solid rgba(226,221,212,0.55);
+  position: relative; transition: background 0.1s;
+}
+.msg:last-child { border-bottom: none; }
+.msg:hover { background: rgba(181,137,74,0.03); }
+.msg.hidden { display: none; }
+.msg.matched { background: rgba(181,137,74,0.06); }
+.msg-bar { width: 3px; border-radius: 2px; flex-shrink: 0; margin-right: 14px; align-self: stretch; min-height: 20px; }
+.role-user      .msg-bar { background: var(--user-accent); }
+.role-assistant .msg-bar { background: var(--ai-accent); }
+.role-system    .msg-bar { background: var(--sys-accent); }
+.role-unknown   .msg-bar { background: var(--ink3); }
+.msg-inner { flex: 1; min-width: 0; }
+.msg-top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.msg-role {
+  font-family: 'Inconsolata', monospace; font-size: 0.62rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.role-user      .msg-role { color: var(--user-accent); }
+.role-assistant .msg-role { color: var(--ai-accent); }
+.role-system    .msg-role { color: var(--sys-accent); }
+.role-unknown   .msg-role { color: var(--ink3); }
+.msg-time { font-family: 'Inconsolata', monospace; font-size: 0.6rem; color: var(--ink3); }
+.msg-acts { margin-left: auto; display: flex; gap: 3px; opacity: 0; transition: opacity 0.13s; }
+.msg:hover .msg-acts { opacity: 1; }
+.m-btn {
+  background: none; border: 1px solid var(--border2); border-radius: 3px;
+  font-family: 'Inconsolata', monospace; font-size: 0.6rem; color: var(--ink3);
+  padding: 2px 6px; cursor: pointer; transition: all 0.1s;
+}
+.m-btn:hover { color: var(--ink); border-color: var(--ink3); }
+.m-btn.danger:hover { color: var(--rust); border-color: rgba(160,64,48,0.4); }
+.msg-text { font-size: 0.87rem; line-height: 1.72; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+.msg-text mark { background: #f5e07a; color: var(--ink); border-radius: 2px; padding: 0 1px; }
+.msg-footer { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; align-items: center; }
+.tag {
+  font-family: 'Inconsolata', monospace; font-size: 0.6rem; padding: 2px 8px; border-radius: 10px;
+  background: var(--tag-bg); border: 1px solid rgba(181,137,74,0.27); color: var(--gold);
+  display: inline-flex; align-items: center; gap: 3px;
+}
+.tag-x { cursor: pointer; color: var(--ink3); }
+.tag-x:hover { color: var(--rust); }
+
+/* ── Empty ── */
+.empty-doc {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 360px; gap: 14px; color: var(--ink3); text-align: center; padding: 40px;
+}
+.empty-glyph { font-size: 3rem; opacity: 0.2; }
+.empty-h { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-style: italic; color: var(--ink2); }
+.empty-p { font-size: 0.84rem; max-width: 340px; line-height: 1.65; }
+
+/* ── Modals ── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(28,26,22,0.55);
+  display: none; align-items: center; justify-content: center;
+  z-index: 200; backdrop-filter: blur(3px);
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--paper); border: 1px solid var(--border2); border-radius: 8px;
+  padding: 24px; width: 500px; max-width: 96vw; max-height: 88vh; overflow-y: auto;
+  position: relative; animation: popIn 0.16s ease; box-shadow: var(--shadow2);
+}
+@keyframes popIn { from { transform:scale(0.95); opacity:0; } to { transform:scale(1); opacity:1; } }
+.modal-close {
+  position: absolute; top: 14px; right: 16px; background: none;
+  border: none; font-size: 1rem; cursor: pointer; color: var(--ink3);
+}
+.modal-close:hover { color: var(--ink); }
+.modal-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; margin-bottom: 4px; }
+.modal-sub { font-size: 0.78rem; color: var(--ink3); margin-bottom: 16px; }
+.modal-label {
+  font-family: 'Inconsolata', monospace; font-size: 0.6rem; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--ink3); display: block; margin-bottom: 5px;
+}
+.modal-input, .modal-select {
+  width: 100%; background: var(--paper2); border: 1px solid var(--border2); border-radius: 5px;
+  color: var(--ink); font-family: 'Mulish', sans-serif; font-size: 0.84rem;
+  padding: 8px 11px; outline: none; margin-bottom: 14px;
+}
+.modal-input:focus, .modal-select:focus { border-color: rgba(181,137,74,0.5); }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.modal-btn {
+  font-family: 'Mulish', sans-serif; font-size: 0.78rem; font-weight: 600;
+  padding: 8px 16px; border-radius: 5px; cursor: pointer; transition: all 0.13s;
+  border: 1px solid var(--border2); background: none; color: var(--ink2);
+}
+.modal-btn:hover { color: var(--ink); border-color: var(--ink3); }
+.modal-btn-primary { background: var(--gold); color: #fff; border-color: var(--gold); }
+.modal-btn-primary:hover { background: var(--gold2); border-color: var(--gold2); }
+.parse-preview {
+  background: var(--paper2); border: 1px solid var(--border); border-radius: 5px;
+  padding: 10px; max-height: 220px; overflow-y: auto; margin-bottom: 14px;
+}
+.parse-preview::-webkit-scrollbar { width: 3px; }
+.parse-preview::-webkit-scrollbar-thumb { background: var(--border2); }
+.pp-msg { padding: 5px 0; border-bottom: 1px solid rgba(226,221,212,0.4); font-size: 0.76rem; display: flex; gap: 8px; }
+.pp-msg:last-child { border-bottom: none; }
+.pp-role { font-family: 'Inconsolata', monospace; font-size: 0.62rem; font-weight: 600; flex-shrink: 0; width: 56px; margin-top: 1px; }
+.pp-u { color: var(--user-accent); }
+.pp-a { color: var(--ai-accent); }
+.pp-text { color: var(--ink2); line-height: 1.5; }
+.ch-pick-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 4px; max-height: 200px; overflow-y: auto; }
+.ch-pick {
+  text-align: left; padding: 8px 11px; border: 1px solid var(--border2); border-radius: 5px;
+  background: var(--paper2); cursor: pointer; font-family: 'Mulish', sans-serif;
+  font-size: 0.8rem; color: var(--ink2); transition: all 0.12s;
+}
+.ch-pick:hover { border-color: var(--teal); color: var(--ink); background: #edf5f2; }
+.exp-opts { display: flex; flex-direction: column; gap: 7px; }
+.exp-opt {
+  display: flex; align-items: center; gap: 11px; padding: 10px 12px;
+  border: 1px solid var(--border2); border-radius: 6px; cursor: pointer; transition: all 0.12s;
+}
+.exp-opt:hover { border-color: var(--gold); background: var(--tag-bg); }
+.exp-icon { font-size: 1.2rem; }
+.exp-name { font-weight: 600; font-size: 0.82rem; }
+.exp-desc { font-size: 0.71rem; color: var(--ink3); margin-top: 1px; }
+
+/* ── Import modal ── */
+.imp-tabs { display:flex; gap:0; margin-bottom:14px; border-bottom:1px solid var(--border); }
+.imp-tab {
+  font-family:'Mulish',sans-serif; font-size:0.78rem; font-weight:600;
+  padding:7px 16px; background:none; border:none; border-bottom:2px solid transparent;
+  cursor:pointer; color:var(--ink3); margin-bottom:-1px; transition:all 0.14s;
+}
+.imp-tab:hover { color:var(--ink2); }
+.imp-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+
+.imp-dropzone {
+  border: 2px dashed var(--border2); border-radius: 8px; padding: 28px 20px;
+  text-align: center; cursor: pointer; transition: all 0.15s; margin-bottom: 12px;
+  background: var(--paper2);
+}
+.imp-dropzone:hover, .imp-dropzone.drag-over { border-color: var(--gold); background: var(--tag-bg); }
+.imp-drop-icon { font-size: 1.8rem; opacity: 0.35; margin-bottom: 8px; }
+.imp-drop-text { font-size: 0.85rem; color: var(--ink2); margin-bottom: 4px; }
+.imp-link { color: var(--gold); text-decoration: underline; }
+.imp-drop-sub { font-family: 'Inconsolata', monospace; font-size: 0.62rem; color: var(--ink3); }
+.imp-detected {
+  background: var(--paper2); border: 1px solid var(--border); border-radius: 5px;
+  padding: 8px 12px; margin-bottom: 10px; font-size: 0.78rem; color: var(--ink2);
+  display: flex; align-items: center; gap: 8px;
+}
+.imp-detected-icon { font-size: 1rem; }
+.imp-detected-format { font-family: 'Inconsolata', monospace; font-weight: 600; color: var(--gold); font-size: 0.72rem; }
+.imp-preview {
+  background: var(--paper2); border: 1px solid var(--border); border-radius: 5px;
+  padding: 10px; max-height: 180px; overflow-y: auto; margin-bottom: 4px;
+}
+.imp-preview::-webkit-scrollbar { width: 3px; }
+.imp-preview::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* ── Toast ── */
+#toast {
+  position: fixed; bottom: 18px; right: 20px;
+  background: var(--ink); color: var(--paper); border-left: 3px solid var(--gold);
+  padding: 9px 16px; border-radius: 5px; font-family: 'Inconsolata', monospace;
+  font-size: 0.75rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 500;
+}
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">Chat<em>Doc</em></div>
+  <input class="doc-name-input" id="docName" placeholder="Document name…" oninput="saveDoc()">
+  <div class="topbar-sep"></div>
+  <div class="search-wrap">
+    <span class="si">⌕</span>
+    <input type="text" id="searchInput" placeholder="Search… (⌘K)" oninput="handleSearch()" autocomplete="off">
+    <span class="search-hit" id="searchHit" style="display:none"></span>
+  </div>
+  <button class="tb-btn" onclick="openLoadDoc()">Load doc ↑</button>
+  <button class="tb-btn tb-btn-save" id="saveDocBtn" onclick="openSaveDoc()">Save doc ↓</button>
+  <button class="tb-btn tb-btn-gold" onclick="openNewChapter()">+ Chapter</button>
+</div>
+
+<div class="body-wrap">
+  <div class="sidebar">
+    <div class="sb-section">
+      <div class="sb-label">Open provider →</div>
+      <div class="provider-grid">
+        <a class="prov-btn" href="https://claude.ai" target="_blank" rel="noopener">
+          <span class="prov-icon">◈</span>
+          <div><div class="prov-name">Claude</div><div class="prov-sub">claude.ai</div></div>
+          <span class="prov-arrow">↗</span>
+        </a>
+        <a class="prov-btn" href="https://chatgpt.com" target="_blank" rel="noopener">
+          <span class="prov-icon">◉</span>
+          <div><div class="prov-name">ChatGPT</div><div class="prov-sub">chatgpt.com</div></div>
+          <span class="prov-arrow">↗</span>
+        </a>
+        <a class="prov-btn" href="https://gemini.google.com" target="_blank" rel="noopener">
+          <span class="prov-icon">✦</span>
+          <div><div class="prov-name">Gemini</div><div class="prov-sub">gemini.google.com</div></div>
+          <span class="prov-arrow">↗</span>
+        </a>
+        <a class="prov-btn" href="https://copilot.microsoft.com" target="_blank" rel="noopener">
+          <span class="prov-icon">⬡</span>
+          <div><div class="prov-name">Copilot</div><div class="prov-sub">copilot.microsoft.com</div></div>
+          <span class="prov-arrow">↗</span>
+        </a>
+      </div>
+    </div>
+    <div class="sb-section" style="padding-bottom:6px;flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="sb-label">Chapters</div>
+      <div class="toc-scroll" id="tocList"></div>
+    </div>
+    <div class="sb-add-ch" onclick="openNewChapter()"><span>+</span> New chapter</div>
+  </div>
+
+  <div class="doc-area">
+    <div class="doc-scroll" id="docScroll">
+      <div id="chaptersEl"></div>
+      <div class="empty-doc" id="emptyDoc">
+        <div class="empty-glyph">§</div>
+        <div class="empty-h">Your document is empty</div>
+        <div class="empty-p">Click a provider on the left to open it in a new tab. Chat there, then select all, copy, and paste into the box below — it'll be parsed and added to a chapter.</div>
+        <button class="modal-btn modal-btn-primary" onclick="openNewChapter()" style="margin-top:4px">Create first chapter</button>
+      </div>
+    </div>
+    <div class="paste-zone">
+      <div class="paste-row">
+        <div class="paste-col">
+          <div class="paste-label">
+            Paste chat here
+            <span class="paste-hint">Go to provider tab → Select All (Ctrl+A) → Copy (Ctrl+C) → Paste here (Ctrl+V)</span>
+          </div>
+          <textarea class="paste-textarea" id="pasteArea"
+            placeholder="Paste any chat — Claude, ChatGPT, Gemini, plain text. Auto-parsed."
+            oninput="onPasteInput()" onpaste="setTimeout(triggerPaste,60)"></textarea>
+        </div>
+        <div class="paste-side">
+          <select class="paste-ch-select" id="pasteChSelect" onchange="onPasteInput()">
+            <option value="">— chapter —</option>
+          </select>
+          <button class="paste-btn" id="pasteBtn" onclick="triggerPaste()" disabled>Parse &amp; add →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Chapter Modal -->
+<div class="overlay" id="newChModal">
+  <div class="modal" style="width:360px">
+    <button class="modal-close" onclick="closeModal('newChModal')">✕</button>
+    <div class="modal-title">New Chapter</div>
+    <label class="modal-label" style="margin-top:14px">Title</label>
+    <input class="modal-input" id="newChTitle" placeholder="e.g. Project Research" onkeydown="if(event.key==='Enter')confirmNewCh()">
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModal('newChModal')">Cancel</button>
+      <button class="modal-btn modal-btn-primary" onclick="confirmNewCh()">Create →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Parse Preview Modal -->
+<div class="overlay" id="parseModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('parseModal')">✕</button>
+    <div class="modal-title">Review parsed chat</div>
+    <div class="modal-sub" id="parseModalSub"></div>
+    <div class="parse-preview" id="parsePreview"></div>
+    <label class="modal-label">Add to chapter</label>
+    <select class="modal-select" id="parseChSelect"></select>
+    <label class="modal-label">Or create new chapter (leave blank to use above)</label>
+    <input class="modal-input" id="parseNewCh" placeholder="New chapter name…">
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModal('parseModal')">Cancel</button>
+      <button class="modal-btn modal-btn-primary" onclick="confirmImport()">Add to document →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tag Modal -->
+<div class="overlay" id="tagModal">
+  <div class="modal" style="width:340px">
+    <button class="modal-close" onclick="closeModal('tagModal')">✕</button>
+    <div class="modal-title">Tag message</div>
+    <label class="modal-label" style="margin-top:14px">Label</label>
+    <input class="modal-input" id="tagInput" placeholder="e.g. important, idea, todo" onkeydown="if(event.key==='Enter')confirmTag()">
+    <div id="quickTags" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px"></div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModal('tagModal')">Cancel</button>
+      <button class="modal-btn modal-btn-primary" onclick="confirmTag()">Add tag</button>
+    </div>
+  </div>
+</div>
+
+<!-- Move Modal -->
+<div class="overlay" id="moveModal">
+  <div class="modal" style="width:360px">
+    <button class="modal-close" onclick="closeModal('moveModal')">✕</button>
+    <div class="modal-title" id="moveModalTitle">Move to chapter</div>
+    <div class="ch-pick-list" id="moveChList"></div>
+    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+      <label class="modal-label">Or extract to new document</label>
+      <input class="modal-input" id="newDocName" placeholder="New document filename…">
+      <button class="modal-btn modal-btn-primary" onclick="extractToDoc()" style="width:100%;margin-top:4px">Download as new document ↓</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save Modal -->
+<div class="overlay" id="exportModal">
+  <div class="modal" style="width:460px">
+    <button class="modal-close" onclick="closeModal('exportModal')">✕</button>
+    <div class="modal-title">Save / Export</div>
+
+    <!-- Save back to original format (shown when a file was loaded) -->
+    <div id="saveBackSection" style="display:none;margin-bottom:14px">
+      <div class="modal-label">Save back to original format</div>
+      <div class="exp-opt" id="saveBackBtn" onclick="saveBackToOriginal()" style="border-color:var(--teal);background:#edf5f2">
+        <div class="exp-icon" id="saveBackIcon">💾</div>
+        <div>
+          <div class="exp-name" id="saveBackName" style="color:var(--teal)">Save back</div>
+          <div class="exp-desc" id="saveBackDesc">Save in the format you loaded from</div>
+        </div>
+      </div>
+      <div style="margin:10px 0 4px;border-top:1px solid var(--border)"></div>
+      <div class="modal-label">Or export as a different format</div>
+    </div>
+
+    <div id="saveBackNote" style="display:none;margin-bottom:12px;font-size:0.78rem;color:var(--ink3)">
+      💡 Tip: Use <strong>Save as JSON</strong> as your portable save file — it preserves chapters, tags and all metadata.
+    </div>
+
+    <div class="exp-opts" id="exportOpts">
+      <div class="exp-opt" onclick="doExport('json')" id="expOptJson" style="border-color:var(--gold);background:var(--tag-bg)">
+        <div class="exp-icon">💾</div>
+        <div>
+          <div class="exp-name" style="color:var(--gold)">Save as JSON <span style="font-size:0.68rem;font-weight:400;color:var(--ink3)">— full fidelity</span></div>
+          <div class="exp-desc">Preserves chapters, tags, metadata. Load back with "Load doc" on any device.</div>
+        </div>
+      </div>
+      <div class="exp-opt" onclick="doExport('md')">
+        <div class="exp-icon">𝐌↓</div>
+        <div><div class="exp-name">Save as Markdown (.md)</div><div class="exp-desc">Chapters become ## headings. Works in Obsidian, Notion, GitHub.</div></div>
+      </div>
+      <div class="exp-opt" onclick="doExport('txt')">
+        <div class="exp-icon">📄</div>
+        <div><div class="exp-name">Save as plain text (.txt)</div><div class="exp-desc">Simple text file, open in any editor or Word.</div></div>
+      </div>
+      <div class="exp-opt" onclick="doExport('docx')">
+        <div class="exp-icon">📝</div>
+        <div><div class="exp-name">Save as Word (.docx)</div><div class="exp-desc">Formatted Word document with chapter headings.</div></div>
+      </div>
+      <div class="exp-opt" onclick="doExport('gdocs')">
+        <div class="exp-icon">📋</div>
+        <div><div class="exp-name">Copy for Google Docs</div><div class="exp-desc">Copies formatted text — paste into an open Google Doc.</div></div>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-family:'Inconsolata',monospace;font-size:0.65rem;color:var(--ink3)" id="lastSavedLine"></div>
+  </div>
+</div>
+
+<!-- Load Document Modal -->
+<div class="overlay" id="loadDocModal">
+  <div class="modal" style="width:460px">
+    <button class="modal-close" onclick="closeModal('loadDocModal')">✕</button>
+    <div class="modal-title">Load document</div>
+    <div class="modal-sub" style="margin-bottom:14px">
+      Load a previously saved JSON file. This <strong>replaces</strong> your current document — export a save first if you want to keep it.
+    </div>
+
+    <!-- Current doc summary -->
+    <div id="currentDocSummary" style="background:var(--paper2);border:1px solid var(--border);border-radius:5px;padding:10px 12px;margin-bottom:14px;font-size:0.8rem;color:var(--ink2)"></div>
+
+    <div class="imp-tabs">
+      <button class="imp-tab active" id="loadTabFileBtn" onclick="switchLoadTab('file')">📂 Load file</button>
+      <button class="imp-tab" id="loadTabPasteBtn" onclick="switchLoadTab('paste')">📋 Paste JSON</button>
+    </div>
+
+    <div id="loadTabFile">
+      <div class="imp-dropzone" id="loadDropzone"
+        onclick="document.getElementById('loadFileInput').click()"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleLoadDrop(event)">
+        <div class="imp-drop-icon">📂</div>
+        <div class="imp-drop-text">Drop any file — <strong>.json, .txt, .md, .docx</strong> — or <span class="imp-link">browse</span></div>
+        <div class="imp-drop-sub">JSON · TXT · MD · DOCX · Android: use Paste tab</div>
+        <input type="file" id="loadFileInput" style="display:none" accept=".json,.txt,.md,.docx,.doc" onchange="handleLoadFile(event)">
+      </div>
+    </div>
+
+    <div id="loadTabPaste" style="display:none">
+      <div class="modal-sub" style="margin-bottom:8px;font-size:0.75rem">Open your JSON file → Select All → Copy → paste here</div>
+      <textarea id="loadPasteArea" class="paste-textarea" style="min-height:100px;max-height:160px;width:100%;font-size:0.72rem"
+        placeholder='{"title":"My Chat Document","chapters":[...]}\&#10;Paste your JSON here…'
+        oninput="onLoadPasteInput()"></textarea>
+    </div>
+
+    <div id="loadPreview" style="display:none;margin-top:10px;background:var(--paper2);border:1px solid var(--border);border-radius:5px;padding:10px 12px;font-size:0.8rem;color:var(--ink2)"></div>
+
+    <div class="modal-actions" id="loadActions" style="display:none;margin-top:14px">
+      <button class="modal-btn" onclick="closeModal('loadDocModal')">Cancel</button>
+      <button class="modal-btn" style="color:var(--rust);border-color:var(--rust)44" onclick="mergeLoadedDoc()">Merge into current</button>
+      <button class="modal-btn modal-btn-primary" onclick="replaceWithLoadedDoc()">Replace &amp; load →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="overlay" id="importModal">
+  <div class="modal" style="width:480px">
+    <button class="modal-close" onclick="closeModal('importModal')">✕</button>
+    <div class="modal-title">Import</div>
+    <div class="modal-sub" id="importSub">Supports Claude.ai, ChatGPT, Gemini JSON exports, plain text, markdown, Word/Google Doc text, and ChatDoc backups.</div>
+    <div class="imp-dropzone" id="impDropzone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event)">
+      <div class="imp-drop-icon">⬆</div>
+      <div class="imp-drop-text">Drop a file here or <span class="imp-link">browse</span></div>
+      <div class="imp-drop-sub">JSON · TXT · MD · DOCX (paste) · Google Doc (paste)</div>
+      <input type="file" id="fileInput" style="display:none" accept=".json,.txt,.md,.docx,.doc" onchange="handleFileSelect(event)">
+    </div>
+    <div class="imp-detected" id="impDetected" style="display:none"></div>
+    <div class="imp-preview" id="impPreview" style="display:none"></div>
+    <div id="impChapterSection" style="display:none;margin-top:12px">
+      <label class="modal-label">Add to chapter</label>
+      <select class="modal-select" id="impChSelect" style="margin-bottom:8px"></select>
+      <label class="modal-label">Or create new chapter</label>
+      <input class="modal-input" id="impNewCh" placeholder="New chapter name (leave blank to use above)">
+    </div>
+    <div class="modal-actions" id="impActions" style="display:none">
+      <button class="modal-btn" onclick="closeModal('importModal');resetImport()">Cancel</button>
+      <button class="modal-btn modal-btn-primary" id="impConfirmBtn" onclick="confirmFileImport()">Add to document →</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SK = 'chatdoc_v3';
+let doc = { title: 'My Chat Document', chapters: [] };
+let allTags = new Set();
+let pendingMsgs = [];
+let pendingTag = null;
+let pendingMove = null;
+
+const $ = id => document.getElementById(id);
+const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function saveDoc() { doc.title=$('docName').value||'My Chat Document'; localStorage.setItem(SK,JSON.stringify(doc)); }
+function loadDoc() {
+  try {
+    const d=localStorage.getItem(SK); if(d) doc=JSON.parse(d);
+    $('docName').value=doc.title;
+    doc.chapters.forEach(ch=>ch.messages.forEach(m=>(m.tags||[]).forEach(t=>allTags.add(t))));
+  } catch(e){}
+}
+
+loadDoc(); renderAll();
+
+function renderAll() { renderTOC(); renderChapters(); syncPasteSelect(); }
+
+function renderTOC() {
+  const el=$('tocList');
+  if(!doc.chapters.length){el.innerHTML='<div style="padding:8px 4px;font-size:0.73rem;color:var(--ink3)">No chapters yet</div>';return;}
+  el.innerHTML=doc.chapters.map((ch,i)=>`
+    <div class="toc-item" id="toc-${ch.id}" onclick="jumpTo('${ch.id}')">
+      <span class="toc-n">${String(i+1).padStart(2,'0')}</span>
+      <span class="toc-t">${esc(ch.title||'Untitled')}</span>
+      <span class="toc-c">${ch.messages.length}</span>
+    </div>`).join('');
+}
+
+function syncPasteSelect() {
+  const sel=$('pasteChSelect'), cur=sel.value;
+  sel.innerHTML='<option value="">— chapter —</option>'+doc.chapters.map(ch=>`<option value="${ch.id}">${esc(ch.title||'Untitled')}</option>`).join('');
+  if(cur) sel.value=cur;
+}
+
+function jumpTo(id) {
+  $('ch-'+id)?.scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.toc-item').forEach(t=>t.classList.remove('active'));
+  $('toc-'+id)?.classList.add('active');
+}
+
+function renderChapters() {
+  const wrap=$('chaptersEl'), empty=$('emptyDoc');
+  wrap.innerHTML='';
+  if(!doc.chapters.length){empty.style.display='flex';return;}
+  empty.style.display='none';
+  doc.chapters.forEach((ch,i)=>{
+    if(i>0){const d=document.createElement('div');d.className='ch-divider';d.innerHTML=`<hr><span>§ ${String(i+1).padStart(2,'0')}</span><hr>`;wrap.appendChild(d);}
+    wrap.appendChild(buildChapter(ch,i));
+  });
+  const q=$('searchInput').value.trim(); if(q) applySearch(q);
+  setTimeout(observeChapters,50);
+}
+
+function buildChapter(ch,idx) {
+  const el=document.createElement('div'); el.className='chapter'; el.id='ch-'+ch.id;
+  el.innerHTML=`
+    <div class="ch-header">
+      <span class="ch-num">${String(idx+1).padStart(2,'0')}</span>
+      <input class="ch-title-input" value="${esc(ch.title||'')}" placeholder="Chapter title…" oninput="updateChTitle('${ch.id}',this.value)">
+      <div class="ch-acts">
+        <button class="ch-act" onclick="openMerge('${ch.id}')">merge</button>
+        <button class="ch-act danger" onclick="deleteChapter('${ch.id}')">delete</button>
+      </div>
+    </div>
+    <div class="messages" id="msgs-${ch.id}"></div>`;
+  const mw=el.querySelector('#msgs-'+ch.id);
+  if(!ch.messages.length){
+    mw.innerHTML='<div style="padding:10px 0;font-size:0.78rem;color:var(--ink3);font-style:italic">No messages yet — paste a chat below and assign it to this chapter.</div>';
+  } else { ch.messages.forEach(m=>mw.appendChild(buildMsg(m,ch.id))); }
+  return el;
+}
+
+function buildMsg(m,chId) {
+  const el=document.createElement('div');
+  el.className=`msg role-${m.role||'unknown'}`; el.dataset.mid=m.id; el.dataset.chid=chId;
+  const ts=m.ts?new Date(m.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+  const tags=(m.tags||[]).map(t=>`<span class="tag">${esc(t)}<span class="tag-x" onclick="removeTag('${chId}','${m.id}','${esc(t)}')">×</span></span>`).join('');
+  el.innerHTML=`
+    <div class="msg-bar"></div>
+    <div class="msg-inner">
+      <div class="msg-top">
+        <span class="msg-role">${m.role||'unknown'}</span>
+        ${ts?`<span class="msg-time">${ts}</span>`:''}
+        <div class="msg-acts">
+          <button class="m-btn" onclick="openTag('${chId}','${m.id}')">tag</button>
+          <button class="m-btn" onclick="openMove('${chId}','${m.id}')">move</button>
+          <button class="m-btn danger" onclick="delMsg('${chId}','${m.id}')">✕</button>
+        </div>
+      </div>
+      <div class="msg-text" id="mt-${m.id}">${esc(m.content)}</div>
+      ${tags?`<div class="msg-footer">${tags}</div>`:''}
+    </div>`;
+  return el;
+}
+
+// ── Paste & parse ──
+function onPasteInput() {
+  $('pasteBtn').disabled=!$('pasteArea').value.trim()||!$('pasteChSelect').value;
+}
+
+function triggerPaste() {
+  const raw=$('pasteArea').value.trim(); if(!raw) return;
+  const msgs=parseChat(raw);
+  if(!msgs.length){toast('Could not parse messages — try pasting more of the conversation');return;}
+  pendingMsgs=msgs;
+  $('parseModalSub').textContent=`Found ${msgs.length} message${msgs.length!==1?'s':''} — review and confirm.`;
+  $('parsePreview').innerHTML=msgs.slice(0,10).map(m=>`
+    <div class="pp-msg">
+      <span class="pp-role ${m.role==='assistant'?'pp-a':'pp-u'}">${m.role}</span>
+      <span class="pp-text">${esc(m.content.slice(0,120))}${m.content.length>120?'…':''}</span>
+    </div>`).join('')+(msgs.length>10?`<div style="font-size:0.7rem;color:var(--ink3);padding:6px 0">+ ${msgs.length-10} more</div>`:'');
+  const sel=$('parseChSelect'); const pre=$('pasteChSelect').value;
+  sel.innerHTML='<option value="">— choose chapter —</option>'+doc.chapters.map(ch=>`<option value="${ch.id}" ${ch.id===pre?'selected':''}>${esc(ch.title||'Untitled')}</option>`).join('');
+  $('parseNewCh').value='';
+  openModal('parseModal');
+}
+
+function parseChat(raw) {
+  // Try JSON
+  try {
+    const j=JSON.parse(raw);
+    const arr=Array.isArray(j)?j:(j.messages||j.conversation||null);
+    if(arr) return normaliseMsgs(arr);
+  } catch(e){}
+
+  const msgs=[]; const lines=raw.split('\n');
+  // Named role lines: "You:", "Claude:", "Assistant:", "ChatGPT:", "Gemini:", "User:", "Human:"
+  const ROLE_RE=/^(You|Human|User|Claude|Assistant|ChatGPT|Gemini|Copilot|AI|Bot)\s*[:：]/i;
+  let cur=null;
+  for(const line of lines) {
+    const m=line.match(ROLE_RE);
+    if(m) {
+      if(cur) msgs.push(cur);
+      const r=m[1].toLowerCase();
+      const role=(r==='you'||r==='human'||r==='user')?'user':'assistant';
+      cur={role,content:line.slice(m[0].length).trim(),ts:Date.now(),id:genId(),tags:[]};
+    } else if(cur) {
+      cur.content+=(cur.content?'\n':'')+line;
+    }
+  }
+  if(cur) msgs.push(cur);
+
+  // Fallback: alternating double-newline blocks
+  if(!msgs.length) {
+    raw.split(/\n{2,}/).map(b=>b.trim()).filter(Boolean).forEach((b,i)=>{
+      msgs.push({role:i%2===0?'user':'assistant',content:b,ts:Date.now(),id:genId(),tags:[]});
+    });
+  }
+  // Last fallback: single message
+  if(!msgs.length&&raw.length) msgs.push({role:'user',content:raw,ts:Date.now(),id:genId(),tags:[]});
+  return msgs.filter(m=>m.content.trim());
+}
+
+function normaliseMsgs(arr) {
+  return arr.map(m=>{
+    let role=(m.role||m.author||m.sender||'user').toLowerCase();
+    if(role==='human') role='user';
+    if(role==='model'||role==='bot') role='assistant';
+    let content='';
+    if(typeof m.content==='string') content=m.content;
+    else if(Array.isArray(m.content)) content=m.content.map(c=>typeof c==='string'?c:c.text||'').join('\n');
+    else if(m.text) content=m.text;
+    else if(m.parts) content=m.parts.join('\n');
+    return {id:genId(),role,content,ts:m.ts||m.timestamp||Date.now(),tags:[]};
+  }).filter(m=>m.content.trim());
+}
+
+function confirmImport() {
+  let chId=$('parseChSelect').value;
+  const newTitle=$('parseNewCh').value.trim();
+  if(newTitle){const ch={id:genId(),title:newTitle,messages:[]};doc.chapters.push(ch);chId=ch.id;}
+  if(!chId){toast('Choose a chapter first');return;}
+  const ch=doc.chapters.find(c=>c.id===chId); if(!ch) return;
+  const existing=new Set(ch.messages.map(m=>m.content.slice(0,80)));
+  const fresh=pendingMsgs.filter(m=>!existing.has(m.content.slice(0,80)));
+  ch.messages.push(...fresh);
+  saveDoc(); renderAll();
+  $('pasteArea').value=''; $('pasteBtn').disabled=true;
+  closeModal('parseModal');
+  toast(`Added ${fresh.length} message${fresh.length!==1?'s':''} to "${ch.title}"`);
+  setTimeout(()=>jumpTo(chId),100);
+}
+
+// ── Chapter ops ──
+function openNewChapter(){$('newChTitle').value='';openModal('newChModal');setTimeout(()=>$('newChTitle').focus(),60);}
+function confirmNewCh(){
+  const t=$('newChTitle').value.trim()||'Untitled Chapter';
+  const ch={id:genId(),title:t,messages:[]};
+  doc.chapters.push(ch);saveDoc();renderAll();closeModal('newChModal');
+  setTimeout(()=>jumpTo(ch.id),80);toast('Chapter created');
+}
+function updateChTitle(id,val){const ch=doc.chapters.find(c=>c.id===id);if(ch){ch.title=val;saveDoc();renderTOC();syncPasteSelect();}}
+function deleteChapter(id){
+  if(!confirm('Delete this chapter and all its messages?')) return;
+  doc.chapters=doc.chapters.filter(c=>c.id!==id);saveDoc();renderAll();toast('Chapter deleted');
+}
+function openMerge(srcId){
+  const targets=doc.chapters.filter(c=>c.id!==srcId);
+  if(!targets.length){toast('No other chapters');return;}
+  $('moveModalTitle').textContent='Merge into chapter';
+  $('moveChList').innerHTML=targets.map(c=>`<button class="ch-pick" onclick="doMerge('${srcId}','${c.id}')">${esc(c.title||'Untitled')}</button>`).join('');
+  $('newDocName').value=''; $('moveModal').dataset.mode='merge'; openModal('moveModal');
+}
+function doMerge(srcId,tgtId){
+  const src=doc.chapters.find(c=>c.id===srcId),tgt=doc.chapters.find(c=>c.id===tgtId);
+  if(!src||!tgt) return;
+  tgt.messages.push(...src.messages);
+  doc.chapters=doc.chapters.filter(c=>c.id!==srcId);
+  saveDoc();renderAll();closeModal('moveModal');toast(`Merged into "${tgt.title}"`);
+}
+
+// ── Message ops ──
+function delMsg(chId,msgId){
+  const ch=doc.chapters.find(c=>c.id===chId);if(!ch) return;
+  ch.messages=ch.messages.filter(m=>m.id!==msgId);saveDoc();
+  document.querySelector(`.msg[data-mid="${msgId}"]`)?.remove();
+  renderTOC();toast('Message deleted');
+}
+function openTag(chId,msgId){
+  pendingTag={chId,msgId};$('tagInput').value='';
+  $('quickTags').innerHTML=[...allTags].map(t=>`<span class="tag" style="cursor:pointer" onclick="document.getElementById('tagInput').value='${esc(t)}'">${esc(t)}</span>`).join('');
+  openModal('tagModal');setTimeout(()=>$('tagInput').focus(),60);
+}
+function confirmTag(){
+  if(!pendingTag) return;
+  const tag=$('tagInput').value.trim();if(!tag){toast('Enter a tag');return;}
+  const {chId,msgId}=pendingTag;
+  const ch=doc.chapters.find(c=>c.id===chId);
+  const msg=ch?.messages.find(m=>m.id===msgId);if(!msg) return;
+  msg.tags=msg.tags||[];
+  if(!msg.tags.includes(tag)){msg.tags.push(tag);allTags.add(tag);}
+  saveDoc();
+  const msgEl=document.querySelector(`.msg[data-mid="${msgId}"]`);
+  if(msgEl){
+    let f=msgEl.querySelector('.msg-footer');
+    if(!f){f=document.createElement('div');f.className='msg-footer';msgEl.querySelector('.msg-inner').appendChild(f);}
+    const chip=document.createElement('span');chip.className='tag';
+    chip.innerHTML=`${esc(tag)}<span class="tag-x" onclick="removeTag('${chId}','${msgId}','${esc(tag)}')">×</span>`;
+    f.appendChild(chip);
+  }
+  closeModal('tagModal');toast(`Tagged "${tag}"`);
+}
+function removeTag(chId,msgId,tag){
+  const ch=doc.chapters.find(c=>c.id===chId);
+  const msg=ch?.messages.find(m=>m.id===msgId);if(!msg) return;
+  msg.tags=(msg.tags||[]).filter(t=>t!==tag);saveDoc();
+  document.querySelector(`.msg[data-mid="${msgId}"]`)?.querySelectorAll('.tag').forEach(chip=>{if(chip.textContent.replace('×','').trim()===tag)chip.remove();});
+}
+function openMove(chId,msgId){
+  pendingMove={chId,msgId};
+  $('moveModalTitle').textContent='Move to chapter';
+  $('moveChList').innerHTML=doc.chapters.filter(c=>c.id!==chId).map(c=>`<button class="ch-pick" onclick="doMove('${c.id}')">${esc(c.title||'Untitled')}</button>`).join('')||'<div style="font-size:0.78rem;color:var(--ink3)">No other chapters</div>';
+  $('newDocName').value='';$('moveModal').dataset.mode='move';openModal('moveModal');
+}
+function doMove(tgtId){
+  if(!pendingMove) return;
+  const {chId,msgId}=pendingMove;
+  const src=doc.chapters.find(c=>c.id===chId),tgt=doc.chapters.find(c=>c.id===tgtId);
+  if(!src||!tgt) return;
+  const idx=src.messages.findIndex(m=>m.id===msgId);if(idx===-1) return;
+  const [msg]=src.messages.splice(idx,1);tgt.messages.push(msg);saveDoc();
+  document.querySelector(`.msg[data-mid="${msgId}"]`)?.remove();
+  renderTOC();closeModal('moveModal');toast(`Moved to "${tgt.title}"`);
+}
+function extractToDoc(){
+  if(!pendingMove) return;
+  const name=$('newDocName').value.trim()||'Extracted';
+  const {chId,msgId}=pendingMove;
+  const src=doc.chapters.find(c=>c.id===chId);if(!src) return;
+  const idx=src.messages.findIndex(m=>m.id===msgId);if(idx===-1) return;
+  const [msg]=src.messages.splice(idx,1);saveDoc();
+  dlFile(name.replace(/\s+/g,'-')+'.json',JSON.stringify({title:name,chapters:[{id:genId(),title:src.title+' (extract)',messages:[msg]}]},null,2),'application/json');
+  document.querySelector(`.msg[data-mid="${msgId}"]`)?.remove();
+  renderTOC();closeModal('moveModal');toast(`Extracted to "${name}.json"`);
+}
+
+// ── Search ──
+function handleSearch(){applySearch($('searchInput').value.trim());}
+function applySearch(q){
+  const hitEl=$('searchHit');
+  if(!q){
+    document.querySelectorAll('.msg').forEach(m=>{m.classList.remove('hidden','matched');});
+    hitEl.style.display='none';
+    document.querySelectorAll('.msg').forEach(m=>{
+      const ch=doc.chapters.find(c=>c.id===m.dataset.chid);
+      const msg=ch?.messages.find(x=>x.id===m.dataset.mid);
+      const txt=$('mt-'+m.dataset.mid);
+      if(txt&&msg) txt.innerHTML=esc(msg.content);
+    });
+    return;
+  }
+  const lq=q.toLowerCase();let count=0;
+  document.querySelectorAll('.msg').forEach(m=>{
+    const ch=doc.chapters.find(c=>c.id===m.dataset.chid);
+    const msg=ch?.messages.find(x=>x.id===m.dataset.mid);if(!msg) return;
+    const hit=msg.content.toLowerCase().includes(lq)||(msg.tags||[]).some(t=>t.toLowerCase().includes(lq));
+    m.classList.toggle('hidden',!hit);m.classList.toggle('matched',hit);
+    const txt=$('mt-'+msg.id);
+    if(txt) txt.innerHTML=hit?esc(msg.content).replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),x=>`<mark>${x}</mark>`):esc(msg.content);
+    if(hit) count++;
+  });
+  hitEl.textContent=`${count} match${count!==1?'es':''}`;hitEl.style.display=count?'':'none';
+}
+
+// ── Export ──
+function buildMd(){
+  return `# ${doc.title}\n\n`+doc.chapters.map((ch,i)=>{
+    return `## ${String(i+1).padStart(2,'0')}. ${ch.title||'Untitled'}\n\n`+
+      ch.messages.map(m=>`**${m.role.toUpperCase()}**${(m.tags||[]).length?' · 🏷 '+m.tags.join(', '):''}\n\n${m.content}`).join('\n\n---\n\n');
+  }).join('\n\n---\n\n');
+}
+function buildTxt(){
+  return doc.title+'\n'+'='.repeat(doc.title.length)+'\n\n'+doc.chapters.map((ch,i)=>{
+    return `\n§ ${i+1}. ${ch.title||'Untitled'}\n${'-'.repeat(36)}\n`+
+      ch.messages.map(m=>`[${m.role.toUpperCase()}]${(m.tags||[]).length?' ['+m.tags.join(', ')+']':''}\n${m.content}`).join('\n\n');
+  }).join('\n\n');
+}
+function doExport(type){
+  closeModal('exportModal');
+  if(type==='json'){dlFile('chat-doc.json',JSON.stringify(doc,null,2),'application/json');toast('JSON exported');}
+  else if(type==='md'){dlFile((doc.title||'chat-doc').replace(/\s+/g,'-')+'.md',buildMd(),'text/markdown');toast('Markdown downloaded');}
+  else if(type==='txt'){dlFile((doc.title||'chat-doc').replace(/\s+/g,'-')+'.txt',buildTxt(),'text/plain');toast('Text file downloaded');}
+  else if(type==='gdocs'){navigator.clipboard.writeText(buildMd()).then(()=>toast('Copied — paste into Google Docs')).catch(()=>prompt('Copy:',buildMd()));}
+}
+function dlFile(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
+
+// ── Modal helpers ──
+function openModal(id){$(id).classList.add('open');}
+function closeModal(id){$(id).classList.remove('open');}
+
+// ── Toast ──
+let toastT;
+function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2400);}
+
+// ── Keyboard ──
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();$('searchInput').focus();}
+  if(e.key==='Escape') document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));
+});
+
+// ── TOC observer ──
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){
+    const id=e.target.id.replace('ch-','');
+    document.querySelectorAll('.toc-item').forEach(t=>t.classList.remove('active'));
+    $('toc-'+id)?.classList.add('active');
+  }});
+},{threshold:0.15});
+function observeChapters(){document.querySelectorAll('.chapter').forEach(c=>observer.observe(c));}
+
+// ── IMPORT ──────────────────────────────────────────────────────────────
+let importedMsgs = [];
+let importFormat = 'unknown';
+
+function openImportModal() {
+  resetImport();
+  const sel = $('impChSelect');
+  sel.innerHTML = '<option value="">— choose chapter —</option>' +
+    doc.chapters.map(ch => `<option value="${ch.id}">${esc(ch.title||'Untitled')}</option>`).join('');
+  openModal('importModal');
+}
+
+function resetImport() {
+  importedMsgs = []; importFormat = 'unknown';
+  const safe = (id, fn) => { const el = document.getElementById(id); if (el) fn(el); };
+  safe('impDetected',      el => el.style.display = 'none');
+  safe('impPreview',       el => el.style.display = 'none');
+  safe('impChapterSection',el => el.style.display = 'none');
+  safe('impActions',       el => el.style.display = 'none');
+  safe('importSub',        el => el.textContent = 'Supports Claude.ai, ChatGPT, Gemini JSON exports, plain text, markdown, Word/Google Doc text, and ChatDoc backups.');
+  safe('fileInput',        el => el.value = '');
+  safe('impPasteArea',     el => el.value = '');
+  safe('impTabFile',       el => el.style.display = '');
+  safe('impTabPaste',      el => el.style.display = 'none');
+  safe('tabFile',          el => el.classList.add('active'));
+  safe('tabPaste',         el => el.classList.remove('active'));
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  $('impDropzone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  const name = file.name.toLowerCase();
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const raw = ev.target.result;
+    const result = detectAndParse(raw, name, file.name);
+    if (!result.msgs.length) {
+      $('importSub').textContent = '⚠ Could not extract messages. Try a different format or paste the content into the paste box instead.';
+      return;
+    }
+    importedMsgs = result.msgs;
+    importFormat = result.format;
+    showImportPreview(result);
+  };
+  reader.readAsText(file);
+}
+
+function detectAndParse(raw, filename, displayName) {
+  // 1. ChatDoc JSON backup (has .chapters array)
+  try {
+    const j = JSON.parse(raw);
+    if (j.chapters && Array.isArray(j.chapters)) {
+      const msgs = [];
+      j.chapters.forEach(ch => {
+        (ch.messages||[]).forEach(m => msgs.push({...m, id:genId(), _fromChapter: ch.title}));
+      });
+      return { format: 'ChatDoc Backup', icon: '◈', msgs, chapters: j.chapters, isChatDocBackup: true, displayName };
+    }
+  } catch(e) {}
+
+  // 2. Claude.ai JSON export (array of convos with chat_messages, or single convo)
+  try {
+    const j = JSON.parse(raw);
+    const parseClaudeMsgs = (chatMsgs) => (chatMsgs||[]).map(m => {
+      const role = (m.sender==='human'||m.role==='user') ? 'user' : 'assistant';
+      const content = Array.isArray(m.content)
+        ? m.content.map(c => c.text||c.content||'').join('\n')
+        : (m.text||m.content||'');
+      return {id:genId(), role, content: content.trim(), ts: m.created_at?new Date(m.created_at).getTime():Date.now(), tags:[]};
+    }).filter(m=>m.content);
+
+    if (Array.isArray(j) && j[0]?.chat_messages) {
+      const msgs = []; j.forEach(c => msgs.push(...parseClaudeMsgs(c.chat_messages)));
+      return { format: 'Claude.ai Export', icon: '◈', msgs, displayName };
+    }
+    if (j.chat_messages) {
+      return { format: 'Claude.ai Export', icon: '◈', msgs: parseClaudeMsgs(j.chat_messages), displayName };
+    }
+  } catch(e) {}
+
+  // 3. ChatGPT JSON export (has .mapping tree or .messages)
+  try {
+    const j = JSON.parse(raw);
+    const convos = Array.isArray(j) ? j : [j];
+    if (convos[0]?.mapping || convos[0]?.messages) {
+      const msgs = [];
+      convos.forEach(convo => {
+        if (convo.mapping) {
+          const nodes = Object.values(convo.mapping)
+            .filter(n => n.message?.content?.parts)
+            .sort((a,b) => (a.message.create_time||0)-(b.message.create_time||0));
+          nodes.forEach(node => {
+            const m = node.message;
+            const role = m.author?.role==='user' ? 'user' : 'assistant';
+            const content = (m.content.parts||[]).filter(p=>typeof p==='string').join('\n').trim();
+            if (content && m.author?.role !== 'system') msgs.push({id:genId(), role, content, ts:(m.create_time||0)*1000||Date.now(), tags:[]});
+          });
+        } else {
+          (convo.messages||[]).forEach(m => {
+            const role = m.role==='user' ? 'user' : 'assistant';
+            const content = typeof m.content==='string' ? m.content : (m.content?.parts||[]).join('\n');
+            if (content.trim()) msgs.push({id:genId(), role, content:content.trim(), ts:Date.now(), tags:[]});
+          });
+        }
+      });
+      if (msgs.length) return { format: 'ChatGPT Export', icon: '◉', msgs, displayName };
+    }
+  } catch(e) {}
+
+  // 4. Generic JSON messages array
+  try {
+    const j = JSON.parse(raw);
+    const arr = Array.isArray(j) ? j : (j.messages||j.conversation||null);
+    if (arr) {
+      const msgs = normaliseMsgs(arr);
+      if (msgs.length) return { format: 'JSON Messages', icon: '{ }', msgs, displayName };
+    }
+  } catch(e) {}
+
+  // 5. Markdown file with role headers
+  if (filename.endsWith('.md')) {
+    const msgs = parseMdFile(raw);
+    if (msgs.length) return { format: 'Markdown', icon: '𝐌↓', msgs, displayName };
+  }
+
+  // 6. Plain text / Word / Google Doc paste
+  const msgs = parseChat(raw);
+  let fmt = 'Plain Text';
+  if (filename.endsWith('.docx')||filename.endsWith('.doc')) fmt = 'Word Document';
+  else if (filename.endsWith('.md')) fmt = 'Markdown';
+  return { format: fmt, icon: '📄', msgs, displayName };
+}
+
+function parseMdFile(raw) {
+  const msgs = [];
+  const sections = raw.split(/\n(?=##\s|\*\*(?:USER|ASSISTANT|HUMAN|AI|CLAUDE|CHATGPT|GEMINI)\*\*)/i);
+  sections.forEach(sec => {
+    const hm = sec.match(/^##\s*(USER|ASSISTANT|HUMAN|AI|CLAUDE|CHATGPT|GEMINI)[^\n]*/i)
+            || sec.match(/^\*\*(USER|ASSISTANT|HUMAN|AI|CLAUDE|CHATGPT|GEMINI)\*\*/i);
+    if (hm) {
+      const roleRaw = hm[1].toLowerCase();
+      const role = (roleRaw==='user'||roleRaw==='human') ? 'user' : 'assistant';
+      const content = sec.replace(hm[0],'').replace(/^---$/m,'').trim();
+      if (content) msgs.push({id:genId(), role, content, ts:Date.now(), tags:[]});
+    }
+  });
+  if (!msgs.length) return parseChat(raw);
+  return msgs;
+}
+
+function showImportPreview(result) {
+  const det = $('impDetected');
+  det.style.display = 'flex';
+  det.innerHTML = `<span class="imp-detected-icon">${result.icon}</span>
+    <span>Detected: <span class="imp-detected-format">${result.format}</span> — <strong>${result.msgs.length} messages</strong> from <em>${esc(result.displayName)}</em></span>`;
+
+  const prev = $('impPreview');
+  prev.style.display = 'block';
+  prev.innerHTML = result.msgs.slice(0,8).map(m =>
+    `<div class="pp-msg">
+      <span class="pp-role ${m.role==='assistant'?'pp-a':'pp-u'}">${m.role}</span>
+      <span class="pp-text">${esc(m.content.slice(0,110))}${m.content.length>110?'…':''}</span>
+    </div>`).join('') + (result.msgs.length>8?`<div style="font-size:0.7rem;color:var(--ink3);padding:5px 0">+ ${result.msgs.length-8} more</div>`:'');
+
+  if (result.isChatDocBackup) {
+    $('impChapterSection').style.display = 'none';
+    $('impActions').style.display = 'flex';
+    $('impConfirmBtn').textContent = 'Restore all chapters →';
+    $('impConfirmBtn').onclick = () => confirmChatDocRestore(result.chapters);
+  } else {
+    $('impChapterSection').style.display = 'block';
+    $('impActions').style.display = 'flex';
+    $('impConfirmBtn').textContent = 'Add to document →';
+    $('impConfirmBtn').onclick = confirmFileImport;
+  }
+}
+
+function confirmFileImport() {
+  let chId = $('impChSelect').value;
+  const newTitle = $('impNewCh').value.trim();
+  if (newTitle) { const ch={id:genId(),title:newTitle,messages:[]}; doc.chapters.push(ch); chId=ch.id; }
+  if (!chId) { toast('Choose or create a chapter first'); return; }
+  const ch = doc.chapters.find(c=>c.id===chId); if (!ch) return;
+  const existing = new Set(ch.messages.map(m=>m.content.slice(0,80)));
+  const fresh = importedMsgs.filter(m=>!existing.has(m.content.slice(0,80)));
+  ch.messages.push(...fresh);
+  saveDoc(); renderAll();
+  closeModal('importModal'); resetImport();
+  toast(`Imported ${fresh.length} message${fresh.length!==1?'s':''} into "${ch.title}"`);
+  setTimeout(()=>jumpTo(chId),100);
+}
+
+function confirmChatDocRestore(chapters) {
+  const existingIds = new Set(doc.chapters.map(c=>c.id));
+  let added=0, merged=0;
+  chapters.forEach(ch => {
+    if (existingIds.has(ch.id)) {
+      const existing = doc.chapters.find(c=>c.id===ch.id);
+      const existContent = new Set(existing.messages.map(m=>m.content.slice(0,80)));
+      const fresh = (ch.messages||[]).filter(m=>!existContent.has(m.content.slice(0,80)));
+      existing.messages.push(...fresh); merged++;
+    } else {
+      doc.chapters.push({...ch, messages:(ch.messages||[]).map(m=>({...m,id:genId()}))});
+      added++;
+    }
+  });
+  saveDoc(); renderAll();
+  closeModal('importModal'); resetImport();
+  toast(`Restored: ${added} new chapter${added!==1?'s':''}, ${merged} merged`);
+}
+
+
+function switchImpTab(tab) {
+  const safe = (id, fn) => { const el = document.getElementById(id); if (el) fn(el); };
+  safe('impTabFile',        el => el.style.display = tab==='file' ? '' : 'none');
+  safe('impTabPaste',       el => el.style.display = tab==='paste' ? '' : 'none');
+  safe('tabFile',           el => el.classList.toggle('active', tab==='file'));
+  safe('tabPaste',          el => el.classList.toggle('active', tab==='paste'));
+  safe('impDetected',       el => el.style.display = 'none');
+  safe('impPreview',        el => el.style.display = 'none');
+  safe('impChapterSection', el => el.style.display = 'none');
+  safe('impActions',        el => el.style.display = 'none');
+  importedMsgs=[];
+}
+
+function onImpPasteInput() {
+  const raw = $('impPasteArea').value.trim();
+  if (!raw) {
+    $('impDetected').style.display='none';
+    $('impPreview').style.display='none';
+    $('impChapterSection').style.display='none';
+    $('impActions').style.display='none';
+    importedMsgs=[];
+    return;
+  }
+  // Debounce slightly so it doesn't fire on every keypress
+  clearTimeout(onImpPasteInput._t);
+  onImpPasteInput._t = setTimeout(() => {
+    const result = detectAndParse(raw, 'paste.txt', 'Pasted text');
+    if (!result.msgs.length) {
+      $('impDetected').style.display='flex';
+      $('impDetected').innerHTML='<span>⚠ No messages detected — try adding more of the conversation</span>';
+      return;
+    }
+    importedMsgs = result.msgs;
+    showImportPreview(result);
+  }, 400);
+}
+
+</script>
+
+<!-- PWA Install Banner -->
+<div id="installBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:600;
+  background:var(--ink);border-top:2px solid var(--gold);
+  padding:10px 20px;align-items:center;gap:12px;flex-wrap:wrap;">
+  <span style="font-family:'Inconsolata',monospace;font-size:0.75rem;color:rgba(255,255,255,0.8);flex:1">
+    📲 Install <strong style="color:var(--gold2)">Chat Document</strong> for offline access &amp; home screen shortcut
+  </span>
+  <button onclick="installPWA()" style="background:var(--gold);color:#000;border:none;border-radius:4px;
+    padding:7px 16px;font-family:'Mulish',sans-serif;font-size:0.78rem;font-weight:600;cursor:pointer;">
+    Install
+  </button>
+  <button onclick="document.getElementById('installBanner').style.display='none'"
+    style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:1rem;cursor:pointer;padding:4px 8px;">✕</button>
+</div>
+
+<script>
+// ── PWA: Service Worker registration ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      console.log('ChatDoc SW registered:', reg.scope);
+    }).catch(err => {
+      // SW registration failed (e.g. opened as file://) — app still works fine
+      console.log('SW not registered (file:// mode):', err.message);
+    });
+  });
+}
+
+// ── PWA: Install prompt ──
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallBanner();
+});
+
+function showInstallBanner() {
+  const banner = document.getElementById('installBanner');
+  if (banner) banner.style.display = 'flex';
+}
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.style.display = 'none';
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  const banner = document.getElementById('installBanner');
+  if (banner) banner.style.display = 'none';
+});
+
+// ── SAVE / LOAD DOC ──────────────────────────────────────────────────────
+
+let loadedDocData = null;  // parsed doc waiting to be confirmed
+let lastSaved = null;      // timestamp of last JSON save
+
+function openSaveDoc() {
+  // Update last saved display
+  const line = document.getElementById('lastSavedLine');
+  if (line) line.textContent = lastSaved ? 'Last saved: ' + new Date(lastSaved).toLocaleString() : 'Not yet saved this session';
+  openModal('exportModal');
+}
+
+function openLoadDoc() {
+  loadedDocData = null;
+  // Show current doc summary
+  const sum = document.getElementById('currentDocSummary');
+  if (sum) {
+    const msgs = doc.chapters.reduce((n,ch)=>n+ch.messages.length,0);
+    sum.innerHTML = `<strong>Current:</strong> "${esc(doc.title)}" — ${doc.chapters.length} chapter${doc.chapters.length!==1?'s':''}, ${msgs} message${msgs!==1?'s':''}
+      <span style="color:var(--ink3);font-size:0.72rem;margin-left:8px">(will be replaced or merged)</span>`;
+  }
+  // Reset tabs
+  switchLoadTab('file');
+  const lp = document.getElementById('loadPasteArea'); if (lp) lp.value = '';
+  const prev = document.getElementById('loadPreview'); if (prev) prev.style.display='none';
+  const acts = document.getElementById('loadActions'); if (acts) acts.style.display='none';
+  openModal('loadDocModal');
+}
+
+function switchLoadTab(tab) {
+  const safe = (id, fn) => { const el = document.getElementById(id); if (el) fn(el); };
+  safe('loadTabFile',    el => el.style.display = tab==='file'  ? '' : 'none');
+  safe('loadTabPaste',   el => el.style.display = tab==='paste' ? '' : 'none');
+  safe('loadTabFileBtn', el => el.classList.toggle('active', tab==='file'));
+  safe('loadTabPasteBtn',el => el.classList.toggle('active', tab==='paste'));
+  loadedDocData = null;
+  const prev = document.getElementById('loadPreview'); if (prev) prev.style.display='none';
+  const acts = document.getElementById('loadActions'); if (acts) acts.style.display='none';
+}
+
+function handleLoadDrop(e) {
+  e.preventDefault();
+  document.getElementById('loadDropzone')?.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) readLoadFile(file);
+}
+function handleLoadFile(e) {
+  const file = e.target.files[0];
+  if (file) readLoadFile(file);
+}
+
+function readLoadFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => parseLoadedJSON(ev.target.result, file.name);
+  reader.readAsText(file);
+}
+
+function onLoadPasteInput() {
+  clearTimeout(onLoadPasteInput._t);
+  onLoadPasteInput._t = setTimeout(() => {
+    const raw = document.getElementById('loadPasteArea')?.value.trim();
+    if (raw) parseLoadedJSON(raw, 'pasted');
+  }, 400);
+}
+
+function parseLoadedJSON(raw, source) {
+  try {
+    const j = JSON.parse(raw);
+    // Must have chapters array to be a ChatDoc file
+    if (!j.chapters || !Array.isArray(j.chapters)) {
+      showLoadError('This doesn't look like a ChatDoc JSON file. Make sure you're loading a file saved with "Save as JSON".');
+      return;
+    }
+    loadedDocData = j;
+    showLoadPreview(j, source);
+  } catch(e) {
+    showLoadError('Could not parse JSON — make sure you copied the full file content.');
+  }
+}
+
+function showLoadError(msg) {
+  const prev = document.getElementById('loadPreview');
+  if (prev) { prev.style.display='block'; prev.innerHTML=`<span style="color:var(--rust)">⚠ ${esc(msg)}</span>`; }
+  const acts = document.getElementById('loadActions'); if (acts) acts.style.display='none';
+}
+
+function showLoadPreview(j, source) {
+  const msgs = (j.chapters||[]).reduce((n,ch)=>n+(ch.messages||[]).length,0);
+  const prev = document.getElementById('loadPreview');
+  if (prev) {
+    prev.style.display = 'block';
+    prev.innerHTML = `<strong style="color:var(--teal)">✓ Valid ChatDoc file</strong> from <em>${esc(source)}</em><br>
+      <span style="color:var(--ink3);font-size:0.75rem">
+        "${esc(j.title||'Untitled')}" — ${(j.chapters||[]).length} chapter${(j.chapters||[]).length!==1?'s':''}, ${msgs} message${msgs!==1?'s':''}
+      </span>`;
+  }
+  const acts = document.getElementById('loadActions'); if (acts) acts.style.display='flex';
+}
+
+function replaceWithLoadedDoc() {
+  if (!loadedDocData) return;
+  if (!confirm(`Replace your current document "${doc.title}" with "${loadedDocData.title||'Untitled'}"?
+
+Export a save first if you want to keep it.`)) return;
+  doc = loadedDocData;
+  // Re-assign fresh IDs to avoid collisions, rebuild allTags
+  allTags = new Set();
+  doc.chapters.forEach(ch => {
+    ch.messages = (ch.messages||[]).map(m => ({...m, id:genId()}));
+    ch.messages.forEach(m => (m.tags||[]).forEach(t => allTags.add(t)));
+  });
+  document.getElementById('docName').value = doc.title || 'My Chat Document';
+  saveDoc();
+  closeModal('loadDocModal');
+  renderAll();
+  toast(`Loaded "${doc.title}" — ${doc.chapters.length} chapters`);
+}
+
+function mergeLoadedDoc() {
+  if (!loadedDocData) return;
+  const existingIds = new Set(doc.chapters.map(c=>c.id));
+  let added=0, merged=0;
+  (loadedDocData.chapters||[]).forEach(ch => {
+    if (existingIds.has(ch.id)) {
+      const existing = doc.chapters.find(c=>c.id===ch.id);
+      const existContent = new Set(existing.messages.map(m=>m.content.slice(0,80)));
+      const fresh = (ch.messages||[]).filter(m=>!existContent.has(m.content.slice(0,80)));
+      existing.messages.push(...fresh.map(m=>({...m,id:genId()}))); merged++;
+    } else {
+      doc.chapters.push({...ch, id:genId(), messages:(ch.messages||[]).map(m=>({...m,id:genId()}))});
+      added++;
+    }
+  });
+  (loadedDocData.chapters||[]).forEach(ch=>(ch.messages||[]).forEach(m=>(m.tags||[]).forEach(t=>allTags.add(t))));
+  saveDoc(); renderAll();
+  closeModal('loadDocModal');
+  toast(`Merged: ${added} new chapter${added!==1?'s':''}, ${merged} updated`);
+}
+
+// Override doExport to track last save time for JSON
+const _origDoExport = doExport;
+function doExport(type) {
+  if (type==='json') lastSaved = Date.now();
+  _origDoExport(type);
+  // Mark save button as clean after JSON save
+  if (type==='json') document.getElementById('saveDocBtn')?.classList.remove('dirty');
+}
+
+// Mark save button dirty on any doc change
+const _origSaveDoc = saveDoc;
+function saveDoc() {
+  _origSaveDoc();
+  document.getElementById('saveDocBtn')?.classList.add('dirty');
+}
+
+
+// ── SOURCE FORMAT TRACKING ───────────────────────────────────────────────
+// Tracks what format was loaded so we can offer "save back"
+let sourceFormat = null; // { type: 'json'|'txt'|'md'|'docx'|'gdoc'|null, name: string }
+
+function setSourceFormat(type, name) {
+  sourceFormat = { type, name };
+  updateSaveBackSection();
+}
+
+function updateSaveBackSection() {
+  const sec  = document.getElementById('saveBackSection');
+  const note = document.getElementById('saveBackNote');
+  const jsonOpt = document.getElementById('expOptJson');
+  if (!sec) return;
+
+  if (!sourceFormat || !sourceFormat.type) {
+    sec.style.display  = 'none';
+    if (note) note.style.display = 'none';
+    if (jsonOpt) { jsonOpt.style.borderColor='var(--gold)'; jsonOpt.style.background='var(--tag-bg)'; }
+    return;
+  }
+
+  const icons = { json:'💾', txt:'📄', md:'𝐌↓', docx:'📝', gdoc:'📋' };
+  const labels = {
+    json: 'Save back as JSON',
+    txt:  'Save back as plain text (.txt)',
+    md:   'Save back as Markdown (.md)',
+    docx: 'Save back as Word (.docx)',
+    gdoc: 'Copy back to clipboard (for Google Docs)'
+  };
+  const descs = {
+    json: `Overwrites your loaded file: ${sourceFormat.name}`,
+    txt:  `Download updated .txt — replace your Google Drive file manually`,
+    md:   `Download updated .md — replace your file manually`,
+    docx: `Download updated .docx — replace your file manually`,
+    gdoc: `Copies full document text — paste back into your Google Doc`
+  };
+
+  document.getElementById('saveBackIcon').textContent = icons[sourceFormat.type] || '💾';
+  document.getElementById('saveBackName').textContent = labels[sourceFormat.type] || 'Save back';
+  document.getElementById('saveBackDesc').textContent = descs[sourceFormat.type] || '';
+  sec.style.display = 'block';
+  if (note) note.style.display = 'block';
+  // De-emphasise JSON option when another format is primary
+  if (sourceFormat.type !== 'json' && jsonOpt) {
+    jsonOpt.style.borderColor = 'var(--border2)';
+    jsonOpt.style.background  = 'var(--paper2)';
+  }
+}
+
+function saveBackToOriginal() {
+  if (!sourceFormat) return;
+  doExport(sourceFormat.type);
+  toast('Saved back as ' + sourceFormat.type.toUpperCase());
+}
+
+// ── DOCX EXPORT (using plain RTF-like approach since we can not use server) ──
+// Real .docx needs a zip of XML. We use a simple HTML→Word blob trick that
+// Word and LibreOffice open correctly.
+function buildDocx() {
+  const htmlBody = doc.chapters.map((ch, i) => {
+    const msgs = ch.messages.map(m => {
+      const roleLabel = m.role.toUpperCase();
+      const tags = (m.tags||[]).length ? ` [${m.tags.join(', ')}]` : '';
+      const escaped = m.content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/\n/g,'<br>');
+      return `<p style="margin:4pt 0 2pt;font-family:Calibri;font-size:9pt;color:#666666"><b>${roleLabel}</b>${tags}</p>
+<p style="margin:0 0 10pt;font-family:Calibri;font-size:11pt">${escaped}</p>`;
+    }).join('\n');
+    return `<h2 style="font-family:Calibri;font-size:14pt;color:#1c1a16;border-bottom:1pt solid #ccc;padding-bottom:4pt">
+      ${String(i+1).padStart(2,'0')}. ${ch.title||'Untitled'}
+    </h2>\n${msgs}`;
+  }).join('<hr style="border:none;border-top:1pt solid #ddd;margin:16pt 0">');
+
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+    xmlns:w="urn:schemas-microsoft-com:office:word"
+    xmlns="http://www.w3.org/TR/REC-html40">
+  <head><meta charset="utf-8">
+  <title>${doc.title||'Chat Document'}</title>
+  <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
+  <style>body{font-family:Calibri;font-size:11pt;margin:2cm}</style>
+  </head>
+  <body>
+  <h1 style="font-family:Calibri;font-size:18pt;color:#1c1a16">${doc.title||'Chat Document'}</h1>
+  ${htmlBody}
+  </body></html>`;
+
+  return html;
+}
+
+// ── DOCX IMPORT via mammoth ──
+async function readDocxFile(file) {
+  if (typeof mammoth === 'undefined') {
+    toast('DOCX reader not loaded yet — try again in a moment');
+    return null;
+  }
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    return result.value; // plain text
+  } catch(e) {
+    console.error('mammoth error:', e);
+    return null;
+  }
+}
+
+// ── OVERRIDE readLoadFile to handle docx + all formats ──
+async function readLoadFile(file) {
+  const name = file.name.toLowerCase();
+  let raw = null;
+
+  if (name.endsWith('.docx') || name.endsWith('.doc')) {
+    raw = await readDocxFile(file);
+    if (!raw) { showLoadError('Could not read DOCX file.'); return; }
+    setSourceFormat('docx', file.name);
+  } else {
+    raw = await file.text();
+    if (name.endsWith('.json'))       setSourceFormat('json', file.name);
+    else if (name.endsWith('.md'))    setSourceFormat('md',   file.name);
+    else if (name.endsWith('.txt'))   setSourceFormat('txt',  file.name);
+    else                              setSourceFormat('txt',  file.name);
+  }
+
+  parseLoadedContent(raw, file.name, name);
+}
+
+function parseLoadedContent(raw, displayName, filename) {
+  // ChatDoc JSON
+  try {
+    const j = JSON.parse(raw);
+    if (j.chapters && Array.isArray(j.chapters)) {
+      loadedDocData = j;
+      showLoadPreview(j, displayName);
+      return;
+    }
+  } catch(e) {}
+
+  // For non-JSON: convert to a single-chapter doc using existing parseChat/parseMdFile
+  let msgs = [];
+  if (filename && filename.endsWith('.md')) {
+    msgs = parseMdFile(raw);
+  } else {
+    msgs = parseChat(raw);
+  }
+
+  if (!msgs.length) { showLoadError('No messages found in this file.'); return; }
+
+  // Wrap in a doc structure
+  const chTitle = displayName.replace(/\.[^.]+$/, ''); // strip extension
+  loadedDocData = {
+    title: chTitle,
+    chapters: [{ id: genId(), title: chTitle, messages: msgs }]
+  };
+  showLoadPreview(loadedDocData, displayName);
+}
+
+// ── Override onLoadPasteInput to handle all formats + detect Google Docs ──
+function onLoadPasteInput() {
+  clearTimeout(onLoadPasteInput._t);
+  onLoadPasteInput._t = setTimeout(() => {
+    const raw = document.getElementById('loadPasteArea')?.value.trim();
+    if (!raw) return;
+
+    // Detect if it looks like a Google Doc (has lots of whitespace patterns typical of GDoc copy)
+    const looksLikeGdoc = (raw.match(/\n{3,}/g)||[]).length > 2 || raw.includes('\t\t');
+    if (looksLikeGdoc) setSourceFormat('gdoc', 'Google Doc paste');
+    else if (!sourceFormat) setSourceFormat('txt', 'pasted text');
+
+    parseLoadedContent(raw, 'Pasted content', 'paste.txt');
+  }, 400);
+}
+
+// ── Override doExport to handle docx format ──
+const _origDoExport2 = doExport;
+function doExport(type) {
+  if (type === 'docx') {
+    const html = buildDocx();
+    const blob = new Blob([html], { type: 'application/vnd.ms-word' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (doc.title||'chat-document').replace(/\s+/g,'-') + '.doc';
+    a.click();
+    lastSaved = Date.now();
+    document.getElementById('saveDocBtn')?.classList.remove('dirty');
+    closeModal('exportModal');
+    toast('Word document downloaded');
+    return;
+  }
+  if (type === 'gdoc') {
+    // Copy markdown to clipboard for pasting into Google Docs
+    const text = buildMd();
+    navigator.clipboard.writeText(text)
+      .then(() => { closeModal('exportModal'); toast('Copied — paste into Google Docs'); })
+      .catch(() => { prompt('Copy this:', text); });
+    return;
+  }
+  _origDoExport2(type);
+}
+
+// ── Wire openSaveDoc to refresh save-back section ──
+const _origOpenSaveDoc = openSaveDoc;
+function openSaveDoc() {
+  updateSaveBackSection();
+  _origOpenSaveDoc();
+}
+
+// ── Wire replaceWithLoadedDoc to preserve source format ──
+const _origReplace = replaceWithLoadedDoc;
+function replaceWithLoadedDoc() {
+  // sourceFormat already set by readLoadFile/onLoadPasteInput before this is called
+  _origReplace();
+}
+
+</script>
+</body>
+</html>
