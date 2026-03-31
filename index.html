@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Chat Document</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#b5894a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Inconsolata:wght@400;500;600&family=Mulish:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f5f2;
+      --paper: #ffffff;
+      --text: #2c2925;
+      --gold: #b5894a;
+      --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { 
+      font-family: 'Mulish', sans-serif; 
+      background: var(--bg); 
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0;
+    }
+    .header {
+      position: sticky;
+      top: 0;
+      background: var(--paper);
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow);
+      z-index: 1000;
+    }
+    #docMenu {
+      display: none; /* Hidden by default */
+      position: absolute;
+      top: 60px;
+      right: 10px;
+      background: var(--paper);
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-width: 200px;
+      z-index: 1001;
+    }
+    .menu-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+      transition: background 0.2s;
+    }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item:hover { background: #f9f9f9; }
+    .btn {
+      padding: 8px 16px;
+      background: var(--gold);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    #editor { 
+      padding: 2rem; 
+      min-height: 80vh; 
+      outline: none; 
+      max-width: 800px; 
+      margin: 0 auto;
+      background: var(--paper);
+      margin-top: 2rem;
+      box-shadow: var(--shadow);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div style="font-family:'Playfair Display'; font-weight:700; font-size: 1.2rem;">ChatDoc</div>
+    <div style="position: relative;">
+      <button id="saveDocBtn" class="btn">Menu</button>
+      <div id="docMenu">
+        <div class="menu-item" data-action="loadDoc">Open Document</div>
+        <div class="menu-item" data-action="saveDoc">Save Progress</div>
+        <div class="menu-item" data-action="import">Import File</div>
+        <div class="menu-item" data-action="clear" style="color: #d9534f;">Clear All</div>
+      </div>
+    </div>
+  </header>
+
+  <div id="editor" contenteditable="true">Start typing or paste your chat here...</div>
+
+  <script>
+    // --- Logic Functions ---
+    function openLoadDoc() { console.log("Action: Load"); }
+    function openSaveDoc() { console.log("Action: Save"); }
+    function openImportModal(type) { console.log("Action: Import " + type); }
+    function clearDocument() { 
+      if(confirm("Clear everything?")) document.getElementById('editor').innerText = ''; 
+    }
+
+    // --- ENHANCED DROPDOWN LOGIC ---
+    (function() {
+      const btn = document.getElementById('saveDocBtn');
+      const menu = document.getElementById('docMenu');
+
+      if (!btn || !menu) return;
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // window.getComputedStyle ensures we read the true visibility, even on first load
+        const isHidden = window.getComputedStyle(menu).display === 'none';
+        menu.style.display = isHidden ? 'block' : 'none';
+      });
+
+      menu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const item = e.target.closest('[data-action]');
+        if (!item) return;
+        
+        const action = item.getAttribute('data-action');
+        if (action === 'loadDoc') openLoadDoc();
+        else if (action === 'saveDoc') openSaveDoc();
+        else if (action === 'import') openImportModal('import');
+        else if (action === 'clear') clearDocument();
+        
+        menu.style.display = 'none';
+      });
+
+      document.addEventListener('click', () => {
+        menu.style.display = 'none';
+      });
+    })();
+
+    // --- PWA Service Worker ---
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('SW Active'))
+          .catch(err => console.error('SW Error', err));
+      });
+    }
+  </script>
+</body>
+</html>
+
